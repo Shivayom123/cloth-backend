@@ -79,13 +79,13 @@ app.post("/signup", async (req, res) => {
       mobileNumber,
       gstNumber,
       city,
-      country,
+      state,
       createPassword,
       confirmPassword,
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !mobileNumber || !gstNumber || !city || !country || !createPassword || !confirmPassword) {
+    if (!firstName || !lastName || !email || !mobileNumber || !gstNumber || !city || !state || !createPassword || !confirmPassword) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -137,7 +137,7 @@ app.post("/signup", async (req, res) => {
       mobileNumber,
       gstNumber,
       city,
-      country,
+      state,
       createPassword: hashedPassword,
       confirmPassword:hashedPassword, // store hashed password only
       otp,

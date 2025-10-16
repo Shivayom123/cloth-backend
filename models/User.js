@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
   mobileNumber: { type: String, required: true },
   gstNumber: { type: String, required: false }, // optional if not mandatory
   city: { type: String, required: true },
-  country: { type: String, required: true },
+  state: { type: String, required: true },
   createPassword: { type: String, required: true },
   confirmPassword: { type: String, required: true },
   otp: { type: String },
