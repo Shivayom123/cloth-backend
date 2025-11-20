@@ -19,15 +19,29 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = "apjabdulkalam@545";
 
-app.use(cors({
-  origin: [
+const allowedOrigins = [
   "https://cloth-frontend-32df.vercel.app",
-  "https://www.priyug.shop",
-  "https://priyug.shop"  // add both with and without www
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
+  "https://priyug.shop",
+  "https://www.priyug.shop"
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps / Postman)
+    if (!origin) return callback(null, true);
+
+    // If origin is in the allowed list → allow
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Otherwise block it
+    return callback(new Error("Not allowed by CORS: " + origin), false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
+
 // ===== Mongoose Connection =====
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
