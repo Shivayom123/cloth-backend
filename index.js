@@ -21,8 +21,8 @@ const JWT_SECRET = "apjabdulkalam@545";
 
 app.use(cors({
   origin: [
-    "https://cloth-frontend-two.vercel.app",   // FIRST frontend
-    "https://cloth-frontend-32df.vercel.app",  // SECOND frontend
+    
+    "https://cloth-frontend-fv47.vercel.app",  // SECOND frontend
     "https://www.priyug.shop",
     "https://priyug.shop"
   ],
