@@ -67,9 +67,6 @@ function generateOtp() {
 // signup page route//
 
 
-
-
-
 app.post("/signup", async (req, res) => {
   try {
     const {
