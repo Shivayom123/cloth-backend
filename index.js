@@ -21,7 +21,7 @@ const JWT_SECRET = "apjabdulkalam@545";
 
 app.use(cors({
   origin: [
-  "https://meesho-frontend-no7l.vercel.app",
+  "https://cloth-frontend-32df.vercel.app",
   "https://www.priyug.shop",
   "https://priyug.shop"  // add both with and without www
   ],
