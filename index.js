@@ -23,8 +23,8 @@ app.use(cors({
   origin: [
     
     "https://cloth-frontend-fv47.vercel.app",  // SECOND frontend
-    "https://www.priyug.shop",
-    "https://priyug.shop"
+    "https://www.shivayom.shop",
+    "https://shivayom.shop"
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
