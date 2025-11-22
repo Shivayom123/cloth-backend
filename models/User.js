@@ -12,8 +12,7 @@ const UserSchema = new mongoose.Schema({
     trim: true
   },
 
-  mobileNumber: { type: String, required: true }
-,
+  mobileNumber: { type: String, required: true },
 
   gstNumber: { type: String },
 
