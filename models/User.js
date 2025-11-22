@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");  // <-- YOU FORGOT THIS LINE
+
 const UserSchema = new mongoose.Schema({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
@@ -17,7 +19,7 @@ const UserSchema = new mongoose.Schema({
   city: { type: String, required: true },
   state: { type: String, required: true },
 
-  password: { type: String, required: true },   // only ONE password field
+  password: { type: String, required: true },   // hashed password only
 
   otp: { type: String },
 
@@ -28,4 +30,3 @@ const UserSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("User", UserSchema);
-
