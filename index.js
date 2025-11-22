@@ -133,50 +133,40 @@ app.post("/signup", async (req, res) => {
 
 
 
-
-
-// ===== Forgot Password Route =====
+//---forgot the password--//
 app.post("/forgot-password", async (req, res) => {
   try {
     let { email, mobileNumber } = req.body;
 
-    // --- VALIDATION ---
     if (!email && !mobileNumber) {
       return res.status(400).json({
         success: false,
-        message: "Email or mobile number is required",
+        message: "Email or Mobile is required"
       });
     }
 
-    // --- QUERY BUILDER ---
     const query = [];
 
-    // EMAIL CHECK
+    // EMAIL HANDLING
     if (email) {
       query.push({ email: email.toLowerCase().trim() });
     }
 
-    // MOBILE CHECK
+    // MOBILE HANDLING
     if (mobileNumber) {
-      let formatted = mobileNumber.trim();
+      let m = mobileNumber.trim().replace(/\s+/g, "");
 
-      // remove spaces
-      formatted = formatted.replace(/\s+/g, "");
+      const mobileFormats = [
+        m,
+        "+91" + m.replace(/^0/, ""),
+        m.replace(/^\+91/, "")
+      ];
 
-      // remove leading 0
-      formatted = formatted.replace(/^0/, "");
-
-      // add +91 if no country code
-      if (!formatted.startsWith("+")) {
-        formatted = "+91" + formatted;
-      }
-
-      query.push({ mobileNumber: formatted });
+      query.push({ mobileNumber: { $in: mobileFormats } });
     }
 
-    console.log("SEARCH QUERY →", { $or: query });
+    console.log("QUERY →", { $or: query });
 
-    // --- FIND USER ---
     const user = await User.findOne({ $or: query });
 
     console.log("FOUND USER →", user);
@@ -184,54 +174,50 @@ app.post("/forgot-password", async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found"
       });
     }
 
-    // --- GENERATE OTP ---
+    // GENERATE OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     user.resetOtp = otp;
-    user.resetOtpExpiry = Date.now() + 10 * 60 * 1000; // 10 mins
+    user.resetOtpExpiry = Date.now() + 10 * 60 * 1000;
     user.isOtpVerified = false;
-
     await user.save();
 
-    // --- SEND EMAIL OTP ---
+    // SEND EMAIL
     if (email) {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: user.email,
         subject: "Password Reset OTP",
-        text: `Your OTP is ${otp}`,
+        text: `Your OTP is ${otp}`
       });
-
-      console.log("EMAIL OTP SENT →", otp);
+      console.log("OTP Email Sent:", otp);
     }
 
-    // --- SEND SMS OTP ---
+    // SEND SMS
     if (mobileNumber) {
       await twilioClient.messages.create({
         body: `Your password reset OTP is ${otp}`,
         from: process.env.TWILIO_FROM_NUMBER,
-        to: user.mobileNumber, // IMPORTANT: use db number
+        to: user.mobileNumber
       });
-
-      console.log("SMS OTP SENT →", otp);
+      console.log("OTP SMS Sent:", otp);
     }
 
     return res.json({
       success: true,
-      message: "OTP sent successfully",
+      message: "OTP sent successfully"
     });
 
   } catch (error) {
     console.error("Forgot Password Error:", error.message);
-
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
+      error: error.message
     });
   }
 });
@@ -240,6 +226,7 @@ app.post("/forgot-password", async (req, res) => {
 
 
 
+//---verify-otp---//
 
 app.post("/verify-otp", async (req, res) => {
   try {
