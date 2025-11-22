@@ -82,13 +82,11 @@ app.post("/signup", async (req, res) => {
       confirmPassword,
     } = req.body;
 
-    // Validation
     if (
       !firstName ||
       !lastName ||
       !email ||
       !mobileNumber ||
-      !gstNumber ||
       !city ||
       !state ||
       !createPassword ||
@@ -102,42 +100,13 @@ app.post("/signup", async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ message: "User already registered" });
-    }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(createPassword, 10);
 
-    // Generate OTP
     const otp = generateOtp();
 
-    // Twilio SMS
-    try {
-      await twilioClient.messages.create({
-        body: `Your OTP is ${otp}`,
-        from: process.env.TWILIO_FROM_NUMBER,
-        to: mobileNumber.startsWith("+") ? mobileNumber : `+91${mobileNumber}`,
-      });
-      console.log("OTP SMS sent");
-    } catch (twilioError) {
-      console.error("Twilio error:", twilioError.message);
-    }
-
-    // Nodemailer Email
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Your OTP Code",
-        text: `Your OTP is ${otp}`,
-      });
-      console.log("OTP Email sent");
-    } catch (emailError) {
-      console.error("Nodemailer error:", emailError.message);
-    }
-
-    // Save user with correct password field
     const newUser = new User({
       firstName,
       lastName,
@@ -146,18 +115,19 @@ app.post("/signup", async (req, res) => {
       gstNumber,
       city,
       state,
-      password: hashedPassword, // <--- FIXED
+      password: hashedPassword, // 🔥 Correct field
       otp,
     });
 
     await newUser.save();
 
-    res.status(201).json({ message: "Registration successful, OTP sent" });
+    res.status(201).json({ message: "Registration successful" });
   } catch (err) {
     console.error("Signup error:", err.message);
     res.status(500).json({ message: "Signup failed", error: err.message });
   }
 });
+
 
 
 
@@ -269,39 +239,46 @@ app.post("/verify-otp", async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
 // ===== Login =====
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
+    if (!email || !password)
+      return res
+        .status(400)
+        .json({ message: "Email and password required" });
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ message: "Invalid credentials" });
+    if (!validPassword)
+      return res.status(401).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
-      { fullname: `${user.firstName} ${user.lastName}`, email: user.email, phoneNumber: user.mobileNumber },
+      {
+        fullname: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phoneNumber: user.mobileNumber,
+      },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    res.json({ success: true, message: "Login successful", token });
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token,
+    });
+
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ message: "Login failed", error: err.message });
   }
 });
+
 
 
 
