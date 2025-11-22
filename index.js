@@ -81,7 +81,6 @@ app.post("/signup", async (req, res) => {
       confirmPassword,
     } = req.body;
 
-    // Validate Required Fields
     if (
       !firstName ||
       !lastName ||
@@ -95,40 +94,43 @@ app.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check password match
     if (createPassword !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    // Check existing user
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
-    if (existingUser) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
       return res.status(400).json({ message: "User already registered" });
-    }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(createPassword, 10);
 
-    // Create new user
+    // ⭐ FIX: ALWAYS SAVE MOBILE NUMBER IN +91 FORMAT
+    let formattedMobile = mobileNumber.trim().replace(/\s+/g, "");
+    formattedMobile = formattedMobile.replace(/^0/, "");
+    if (!formattedMobile.startsWith("+")) {
+      formattedMobile = "+91" + formattedMobile;
+    }
+
     const newUser = new User({
       firstName,
       lastName,
       email: email.toLowerCase().trim(),
-      mobileNumber: mobileNumber.startsWith("+") ? mobileNumber : `+91${mobileNumber}`,
+      mobileNumber: formattedMobile,  // ⭐ FIXED
       gstNumber,
       city,
       state,
-      password: hashedPassword,  // 🔥 MUST store in `password` field
+      password: hashedPassword,
     });
 
     await newUser.save();
 
-    return res.status(201).json({ message: "Registration successful", success: true });
+    res.status(201).json({ message: "Registration successful" });
   } catch (err) {
     console.error("Signup error:", err.message);
-    return res.status(500).json({ message: "Signup failed", error: err.message });
+    res.status(500).json({ message: "Signup failed", error: err.message });
   }
 });
+
 
 
 
