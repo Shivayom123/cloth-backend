@@ -83,7 +83,17 @@ app.post("/signup", async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !mobileNumber || !gstNumber || !city || !state || !createPassword || !confirmPassword) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !mobileNumber ||
+      !gstNumber ||
+      !city ||
+      !state ||
+      !createPassword ||
+      !confirmPassword
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -107,7 +117,7 @@ app.post("/signup", async (req, res) => {
       await twilioClient.messages.create({
         body: `Your OTP is ${otp}`,
         from: process.env.TWILIO_FROM_NUMBER,
-        to: mobileNumber.startsWith("+") ? mobileNumber : `+91${mobileNumber}`, // add country code if needed
+        to: mobileNumber.startsWith("+") ? mobileNumber : `+91${mobileNumber}`,
       });
       console.log("OTP SMS sent");
     } catch (twilioError) {
@@ -127,7 +137,7 @@ app.post("/signup", async (req, res) => {
       console.error("Nodemailer error:", emailError.message);
     }
 
-    // Save user
+    // Save user with correct password field
     const newUser = new User({
       firstName,
       lastName,
@@ -136,8 +146,7 @@ app.post("/signup", async (req, res) => {
       gstNumber,
       city,
       state,
-      createPassword: hashedPassword,
-      confirmPassword:hashedPassword, // store hashed password only
+      password: hashedPassword, // <--- FIXED
       otp,
     });
 
@@ -149,6 +158,7 @@ app.post("/signup", async (req, res) => {
     res.status(500).json({ message: "Signup failed", error: err.message });
   }
 });
+
 
 
 
