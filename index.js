@@ -140,36 +140,38 @@ app.post("/forgot-password", async (req, res) => {
     if (!email && !mobileNumber) {
       return res
         .status(400)
-        .json({ message: "Email or Mobile required", success: false });
+        .json({ message: "Email or Mobile is required", success: false });
     }
 
     const query = [];
 
+    // EMAIL CHECK
     if (email) {
       query.push({ email: email.toLowerCase().trim() });
     }
 
+    // MOBILE CHECK
     if (mobileNumber) {
-      // Normalize mobile number to include +91 if missing
-      if (!mobileNumber.startsWith("+")) {
-        mobileNumber = "+91" + mobileNumber.replace(/^0/, "");
+      let formattedMobile = mobileNumber;
+
+      if (!formattedMobile.startsWith("+")) {
+        formattedMobile = "+91" + formattedMobile.replace(/^0/, "");
       }
-      query.push({ mobileNumber });
+
+      query.push({ mobileNumber: formattedMobile });
     }
 
-    console.log("MongoDB query:", { $or: query });
+    console.log("MongoDB Query:", { $or: query });
 
     const user = await User.findOne({ $or: query });
 
-    console.log("Found user:", user);
+    console.log("Found User:", user);
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
+      return res.status(404).json({ message: "User not found", success: false });
     }
 
-    // Generate 6-digit OTP
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     user.resetOtp = otp;
@@ -177,7 +179,7 @@ app.post("/forgot-password", async (req, res) => {
     user.isOtpVerified = false;
     await user.save();
 
-    // Send OTP via Email if email exists
+    // SEND OTP EMAIL
     if (email) {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -185,27 +187,31 @@ app.post("/forgot-password", async (req, res) => {
         subject: "Password Reset OTP",
         text: `Your OTP is ${otp}`,
       });
-      console.log("OTP sent via email:", otp);
+      console.log("OTP sent via Email:", otp);
     }
 
-    // Send OTP via SMS if mobile exists
+    // SEND OTP SMS
     if (mobileNumber) {
       await twilioClient.messages.create({
         body: `Your password reset OTP is ${otp}`,
         from: process.env.TWILIO_FROM_NUMBER,
-        to: user.mobileNumber,
+        to: user.mobileNumber, // ❗ Use database number
       });
       console.log("OTP sent via SMS:", otp);
     }
 
     res.json({ message: "OTP sent successfully", success: true });
+
   } catch (error) {
-    console.error("Forgot password error:", error);
-    res
-      .status(500)
-      .json({ message: "Server error", success: false, error: error.message });
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({
+      message: "Server error",
+      success: false,
+      error: error.message,
+    });
   }
 });
+
 
 
 
