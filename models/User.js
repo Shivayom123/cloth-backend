@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");  // <-- YOU FORGOT THIS LINE
+const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema({
   firstName: { type: String, required: true, trim: true },
-  lastName: { type: String, required: true, trim: true },
+  lastName:  { type: String, required: true, trim: true },
 
   email: {
     type: String,
@@ -16,10 +16,10 @@ const UserSchema = new mongoose.Schema({
 
   gstNumber: { type: String },
 
-  city: { type: String, required: true },
+  city:  { type: String, required: true },
   state: { type: String, required: true },
 
-  password: { type: String, required: true },   // hashed password only
+  password: { type: String, required: true },  // ONLY ONE PASSWORD FIELD
 
   otp: { type: String },
 

@@ -67,7 +67,6 @@ function generateOtp() {
 
 // signup page route//
 
-
 app.post("/signup", async (req, res) => {
   try {
     const {
@@ -82,6 +81,7 @@ app.post("/signup", async (req, res) => {
       confirmPassword,
     } = req.body;
 
+    // Validate Required Fields
     if (
       !firstName ||
       !lastName ||
@@ -95,36 +95,38 @@ app.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Check password match
     if (createPassword !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
+    // Check existing user
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existingUser) {
       return res.status(400).json({ message: "User already registered" });
+    }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(createPassword, 10);
 
-    const otp = generateOtp();
-
+    // Create new user
     const newUser = new User({
       firstName,
       lastName,
-      email,
-      mobileNumber,
+      email: email.toLowerCase().trim(),
+      mobileNumber: mobileNumber.startsWith("+") ? mobileNumber : `+91${mobileNumber}`,
       gstNumber,
       city,
       state,
-      password: hashedPassword, // 🔥 Correct field
-      otp,
+      password: hashedPassword,  // 🔥 MUST store in `password` field
     });
 
     await newUser.save();
 
-    res.status(201).json({ message: "Registration successful" });
+    return res.status(201).json({ message: "Registration successful", success: true });
   } catch (err) {
     console.error("Signup error:", err.message);
-    res.status(500).json({ message: "Signup failed", error: err.message });
+    return res.status(500).json({ message: "Signup failed", error: err.message });
   }
 });
 
@@ -270,39 +272,36 @@ app.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password)
-      return res
-        .status(400)
-        .json({ message: "Email and password required" });
+      return res.status(400).json({ message: "Email and password required" });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user)
       return res.status(404).json({ message: "User not found" });
 
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword)
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials" });
 
+    // Create JWT
     const token = jwt.sign(
       {
+        userId: user._id,
         fullname: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        phoneNumber: user.mobileNumber,
       },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    return res.json({
-      success: true,
-      message: "Login successful",
-      token,
-    });
-
-  } catch (err) {
-    console.error("Login error:", err.message);
-    res.status(500).json({ message: "Login failed", error: err.message });
+    res.json({ success: true, message: "Login successful", token });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login failed" });
   }
 });
+
 
 
 
