@@ -132,6 +132,7 @@ app.post("/signup", async (req, res) => {
 
 
 
+
 // ===== Forgot Password Route =====
 app.post("/forgot-password", async (req, res) => {
   try {
@@ -302,6 +303,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Login failed", error: err.message });
   }
 });
+
 
 
 
