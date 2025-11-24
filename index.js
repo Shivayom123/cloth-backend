@@ -345,30 +345,39 @@ app.post("/resend-otp", async (req, res) => {
 /* ================= RESET PASSWORD ================= */
 app.post("/reset-password", async (req, res) => {
   try {
-    const { newPassword, confirmPassword } = req.body;
+    const { newPassword, confirmPassword, email, mobileNumber } = req.body;
 
-    if (!newPassword || !confirmPassword) 
-      return res.status(400).json({ message: "Passwords required", success: false });
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords required" });
+    }
 
-    if (newPassword !== confirmPassword) 
-      return res.status(400).json({ message: "Passwords do not match", success: false });
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" });
+    }
 
-    // Update password for all users (or you can specify a user ID if needed)
-    // ⚠️ Be careful: without email or user identification, this updates everyone if multiple users exist
-    const user = await User.findOne(); // Finds the first user
-    if (!user) return res.status(404).json({ message: "No user found", success: false });
+    // Find the user by email or phone
+    const user = await User.findOne({
+      $or: [{ email }, { mobileNumber }]
+    });
 
-    user.createPassword = newPassword;
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Save new password
+    user.password = newPassword; // MAIN PASSWORD FIELD
     user.confirmPassword = confirmPassword;
 
     await user.save();
 
-    res.json({ message: "Password reset successful", success: true });
+    res.json({ success: true, message: "Password reset successful" });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message, success: false });
+    console.error("Reset error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 
 
