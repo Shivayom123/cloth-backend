@@ -140,7 +140,6 @@ app.post("/forgot-password", async (req, res) => {
   try {
     let { email, mobileNumber } = req.body;
 
-    // Require at least one
     if (!email && !mobileNumber) {
       return res.status(400).json({
         success: false,
@@ -152,47 +151,27 @@ app.post("/forgot-password", async (req, res) => {
 
     // EMAIL HANDLING
     if (email) {
-      const cleanedEmail = String(email).toLowerCase().trim();
-      if (cleanedEmail) query.push({ email: cleanedEmail });
-      email = cleanedEmail; // normalize for later use if needed
+      query.push({ email: email.toLowerCase().trim() });
     }
 
     // MOBILE HANDLING
     if (mobileNumber) {
-      // Ensure it's a string before trimming
-      let m = String(mobileNumber).trim().replace(/\s+/g, "");
-
-      // Normalize to a few searchable formats, but when sending SMS use E.164
-      const e164 = m.startsWith("+") ? m : "+91" + m.replace(/^0/, "");
-      const raw = m.replace(/^\+91/, "");
-      const rawNoLeadingZero = raw.replace(/^0+/, "");
+      let m = mobileNumber.trim().replace(/\s+/g, "");
 
       const mobileFormats = [
         m,
-        e164,
-        raw,
-        rawNoLeadingZero
+        "+91" + m.replace(/^0/, ""),
+        m.replace(/^\+91/, "")
       ];
 
       query.push({ mobileNumber: { $in: mobileFormats } });
-
-      // Overwrite mobileNumber variable with E.164 for sending SMS later
-      mobileNumber = e164;
-    }
-
-    if (query.length === 0) {
-      // defensive: shouldn't happen because of earlier check, but safe-guard
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or mobile number"
-      });
     }
 
     console.log("QUERY →", { $or: query });
 
     const user = await User.findOne({ $or: query });
 
-    console.log("FOUND USER →", user ? user._id : null);
+    console.log("FOUND USER →", user);
 
     if (!user) {
       return res.status(404).json({
@@ -201,68 +180,49 @@ app.post("/forgot-password", async (req, res) => {
       });
     }
 
-    // GENERATE OTP (6 digits)
+    // GENERATE OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Save OTP and expiry on user
     user.resetOtp = otp;
-    user.resetOtpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetOtpExpiry = Date.now() + 10 * 60 * 1000;
     user.isOtpVerified = false;
     await user.save();
 
-    const sendResults = { email: null, sms: null };
-
-    // SEND EMAIL (if requested and user has an email)
-    if (email && user.email) {
-      try {
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: "Password Reset OTP",
-          text: `Your OTP is ${otp}. It is valid for 10 minutes.`
-        });
-        sendResults.email = "sent";
-        console.log("OTP Email Sent:", user.email);
-      } catch (mailErr) {
-        // Log but don't throw — we still want the OTP saved so user can try SMS or another method
-        console.error("Error sending OTP email:", mailErr);
-        sendResults.email = `error: ${mailErr.message || "email send failed"}`;
-      }
+    // SEND EMAIL
+    if (email) {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Password Reset OTP",
+        text: `Your OTP is ${otp}`
+      });
+      console.log("OTP Email Sent:", otp);
     }
 
-    // SEND SMS (if requested)
+    // SEND SMS
     if (mobileNumber) {
-      try {
-        // Ensure Twilio `to` is E.164
-        await twilioClient.messages.create({
-          body: `Your password reset OTP is ${otp}. It is valid for 10 minutes.`,
-          from: process.env.TWILIO_FROM_NUMBER,
-          to: mobileNumber // E.164 format e.g. +91XXXXXXXXXX
-        });
-        sendResults.sms = "sent";
-        console.log("OTP SMS Sent:", mobileNumber);
-      } catch (smsErr) {
-        console.error("Error sending OTP SMS:", smsErr);
-        sendResults.sms = `error: ${smsErr.message || "sms send failed"}`;
-      }
+      await twilioClient.messages.create({
+        body: `Your password reset OTP is ${otp}`,
+        from: process.env.TWILIO_FROM_NUMBER,
+        to: user.mobileNumber
+      });
+      console.log("OTP SMS Sent:", otp);
     }
 
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message: "OTP created and pushed. Check your email or SMS.",
-      sendResults // optional: useful during debugging; remove in production if you want
+      message: "OTP sent successfully"
     });
 
   } catch (error) {
-    console.error("Forgot Password Error:", error);
-    // Return a generic server error message
+    console.error("Forgot Password Error:", error.message);
     return res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
+      error: error.message
     });
   }
 });
-
 
 
 
