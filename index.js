@@ -21,12 +21,13 @@ const JWT_SECRET = "apjabdulkalam@545";
 
 app.use(cors({
   origin: [
-    
-    "https://cloth-frontend-fv47.vercel.app",  // SECOND frontend
-    "https://www.shivayom.shop",
-    "https://shivayom.shop"
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://cloth-frontend-fv47.vercel.app",
+    "https://shivayom.shop",
+    "https://www.shivayom.shop"
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
 // ===== Mongoose Connection =====
