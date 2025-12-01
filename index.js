@@ -17,7 +17,7 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = "apjabdulkalam@545";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(cors({
   origin: [
