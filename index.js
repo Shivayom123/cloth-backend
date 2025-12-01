@@ -135,7 +135,7 @@ app.post("/signup", async (req, res) => {
         userId: savedUser._id,
         firstName: savedUser.firstName,
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
 
