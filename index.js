@@ -86,6 +86,7 @@ app.post("/signup", async (req, res) => {
       confirmPassword,
     } = req.body;
 
+    // ---------------- VALIDATION ----------------
     if (
       !firstName ||
       !lastName ||
@@ -104,37 +105,61 @@ app.post("/signup", async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser)
+    if (existingUser) {
       return res.status(400).json({ message: "User already registered" });
+    }
 
-    const hashedPassword = await bcrypt.hash(createPassword, 10);
-
-    // ⭐ FIX: ALWAYS SAVE MOBILE NUMBER IN +91 FORMAT
+    // ---------------- FORMAT MOBILE ----------------
     let formattedMobile = mobileNumber.trim().replace(/\s+/g, "");
-    formattedMobile = formattedMobile.replace(/^0/, "");
+    formattedMobile = formattedMobile.replace(/^0/, ""); // remove leading 0
+
     if (!formattedMobile.startsWith("+")) {
       formattedMobile = "+91" + formattedMobile;
     }
 
+    // ---------------- HASH PASSWORD ----------------
+    const hashedPassword = await bcrypt.hash(createPassword, 10);
+
+    // ---------------- CREATE USER ----------------
     const newUser = new User({
       firstName,
       lastName,
       email: email.toLowerCase().trim(),
-      mobileNumber: formattedMobile,  // ⭐ FIXED
+      mobileNumber: formattedMobile,
       gstNumber,
       city,
       state,
       password: hashedPassword,
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
 
-    res.status(201).json({ message: "Registration successful" });
+    // ---------------- JWT TOKEN ----------------
+    const token = jwt.sign(
+      {
+        userId: savedUser._id,
+        firstName: savedUser.firstName,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // ---------------- RESPONSE ----------------
+    return res.status(201).json({
+      message: "Signup successful",
+      token,
+      firstName: savedUser.firstName,
+    });
+
   } catch (err) {
     console.error("Signup error:", err.message);
-    res.status(500).json({ message: "Signup failed", error: err.message });
+    return res.status(500).json({
+      message: "Signup failed",
+      error: err.message,
+    });
   }
 });
+
 
 
 
