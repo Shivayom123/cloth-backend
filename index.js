@@ -86,7 +86,6 @@ app.post("/signup", async (req, res) => {
       confirmPassword,
     } = req.body;
 
-    // ---------------- VALIDATION ----------------
     if (
       !firstName ||
       !lastName ||
@@ -109,18 +108,15 @@ app.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "User already registered" });
     }
 
-    // ---------------- FORMAT MOBILE ----------------
     let formattedMobile = mobileNumber.trim().replace(/\s+/g, "");
-    formattedMobile = formattedMobile.replace(/^0/, ""); // remove leading 0
+    formattedMobile = formattedMobile.replace(/^0/, "");
 
     if (!formattedMobile.startsWith("+")) {
       formattedMobile = "+91" + formattedMobile;
     }
 
-    // ---------------- HASH PASSWORD ----------------
     const hashedPassword = await bcrypt.hash(createPassword, 10);
 
-    // ---------------- CREATE USER ----------------
     const newUser = new User({
       firstName,
       lastName,
@@ -134,7 +130,6 @@ app.post("/signup", async (req, res) => {
 
     const savedUser = await newUser.save();
 
-    // ---------------- JWT TOKEN ----------------
     const token = jwt.sign(
       {
         userId: savedUser._id,
@@ -144,21 +139,23 @@ app.post("/signup", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // ---------------- RESPONSE ----------------
     return res.status(201).json({
+      success: true,   // ⭐ REQUIRED
       message: "Signup successful",
-      token,
-      firstName: savedUser.firstName,
+      token: token,
+      firstName: savedUser.firstName
     });
 
   } catch (err) {
     console.error("Signup error:", err.message);
     return res.status(500).json({
+      success: false,
       message: "Signup failed",
       error: err.message,
     });
   }
 });
+
 
 
 
